@@ -189,6 +189,23 @@ html, body {
   text-align: center;
 }
 
+.hint-btn {
+  border: 1px solid #d3dce6;
+  background: #ffffff;
+  color: #16324a;
+  border-radius: 999px;
+  padding: 6px 16px;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.hint-reveal {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #b9770e;
+}
+
 .map-wrap {
   width: 100%;
   max-width: 420px;

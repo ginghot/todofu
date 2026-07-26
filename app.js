@@ -28,6 +28,12 @@
   const answerPrefEl = document.getElementById("answer-pref");
   const answerCapitalEl = document.getElementById("answer-capital");
   const hintTextEl = document.getElementById("hint-text");
+  const hintBtn = document.getElementById("hint-btn");
+  const hintRevealEl = document.getElementById("hint-reveal");
+
+  // 都道府県名そのものを当てるモードでのみヒントを出す（県庁所在地モードは
+  // 県名が最初から表示されているので、県のヒントは意味がない）
+  const HINT_MODES = new Set(["pref", "both"]);
 
   const FULL_VIEWBOX = [0, 0, 1000, 1000];
   const ZOOM_PADDING = 2.4;
@@ -41,6 +47,7 @@
   let lastCode = null;
   let currentCode = null;
   let showingAnswer = false;
+  let hintShown = false;
   let highlightedEl = null;
   let currentViewBox = FULL_VIEWBOX.slice();
   let zoomAnimId = null;
@@ -354,6 +361,7 @@
   function nextQuestion() {
     currentCode = drawNextCode();
     showingAnswer = false;
+    hintShown = false;
     render();
   }
 
@@ -381,9 +389,15 @@
       answerPrefEl.hidden = true;
       answerCapitalEl.hidden = true;
       hintTextEl.textContent = "タップして答えを見る";
+
+      hintBtn.hidden = !HINT_MODES.has(mode) || hintShown;
+      hintRevealEl.hidden = !hintShown;
+      hintRevealEl.textContent = hintShown ? `ヒント: ${pref.hint}` : "";
       return;
     }
 
+    hintBtn.hidden = true;
+    hintRevealEl.hidden = true;
     answerBox.hidden = false;
     hintTextEl.textContent = "タップして次へ";
 
@@ -412,6 +426,12 @@
     } else {
       reveal();
     }
+  });
+
+  hintBtn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    hintShown = true;
+    render();
   });
 
   backBtn.addEventListener("click", (e) => {
