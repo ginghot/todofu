@@ -379,6 +379,15 @@
     zoomTo(currentCode);
     questionTextEl.textContent = QUESTION_TEXT[mode];
 
+    // 県庁所在地が問われているモードでは、問題を出した時点からピンを表示する
+    // （タップして次の問題に進むと、新しい県の位置に切り替わる）
+    if (CAPITAL_PIN_MODES.has(mode) && pref.pin) {
+      capitalPinEl.hidden = false;
+      capitalPinEl.setAttribute("transform", `translate(${pref.pin.x}, ${pref.pin.y})`);
+    } else {
+      capitalPinEl.hidden = true;
+    }
+
     if (mode === "capital") {
       promptNameEl.hidden = false;
       promptNameEl.textContent = pref.name;
@@ -392,7 +401,6 @@
       answerPrefEl.hidden = true;
       answerCapitalEl.hidden = true;
       hintTextEl.textContent = "タップして答えを見る";
-      capitalPinEl.hidden = true;
 
       hintBtn.hidden = !HINT_MODES.has(mode) || hintShown;
       hintRevealEl.hidden = !hintShown;
@@ -404,13 +412,6 @@
     hintRevealEl.hidden = true;
     answerBox.hidden = false;
     hintTextEl.textContent = "タップして次へ";
-
-    if (CAPITAL_PIN_MODES.has(mode) && pref.pin) {
-      capitalPinEl.hidden = false;
-      capitalPinEl.setAttribute("transform", `translate(${pref.pin.x}, ${pref.pin.y})`);
-    } else {
-      capitalPinEl.hidden = true;
-    }
 
     if (mode === "pref" || mode === "both") {
       answerPrefEl.hidden = false;
