@@ -30,10 +30,13 @@
   const hintTextEl = document.getElementById("hint-text");
   const hintBtn = document.getElementById("hint-btn");
   const hintRevealEl = document.getElementById("hint-reveal");
+  const capitalPinEl = document.getElementById("capital-pin");
 
   // 都道府県名そのものを当てるモードでのみヒントを出す（県庁所在地モードは
   // 県名が最初から表示されているので、県のヒントは意味がない）
   const HINT_MODES = new Set(["pref", "both"]);
+  // 県庁所在地が答えに関わるモードでだけピンを表示する
+  const CAPITAL_PIN_MODES = new Set(["capital", "both"]);
 
   const FULL_VIEWBOX = [0, 0, 1000, 1000];
   const ZOOM_PADDING = 2.4;
@@ -389,6 +392,7 @@
       answerPrefEl.hidden = true;
       answerCapitalEl.hidden = true;
       hintTextEl.textContent = "タップして答えを見る";
+      capitalPinEl.hidden = true;
 
       hintBtn.hidden = !HINT_MODES.has(mode) || hintShown;
       hintRevealEl.hidden = !hintShown;
@@ -400,6 +404,13 @@
     hintRevealEl.hidden = true;
     answerBox.hidden = false;
     hintTextEl.textContent = "タップして次へ";
+
+    if (CAPITAL_PIN_MODES.has(mode) && pref.pin) {
+      capitalPinEl.hidden = false;
+      capitalPinEl.setAttribute("transform", `translate(${pref.pin.x}, ${pref.pin.y})`);
+    } else {
+      capitalPinEl.hidden = true;
+    }
 
     if (mode === "pref" || mode === "both") {
       answerPrefEl.hidden = false;
