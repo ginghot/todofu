@@ -292,6 +292,14 @@ html, body {
   pointer-events: none;
 }
 
+.capital-dot,
+.pin-outer,
+.pin-inner {
+  transform-box: fill-box;
+  transform-origin: center;
+  transform: scale(var(--label-font-scale, 1));
+}
+
 .answer-box {
   display: flex;
   flex-direction: column;
