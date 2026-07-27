@@ -8,6 +8,7 @@
     pref: "都道府県モード",
     capital: "県庁所在地モード",
     both: "両方モード",
+    browse: "閲覧モード",
   };
   const QUESTION_TEXT = {
     pref: "黄色の都道府県はどこ？",
@@ -31,12 +32,26 @@
   const hintBtn = document.getElementById("hint-btn");
   const hintRevealEl = document.getElementById("hint-reveal");
   const capitalPinEl = document.getElementById("capital-pin");
+  const namesToggleLabel = document.getElementById("names-toggle-label");
+  const namesToggle = document.getElementById("names-toggle");
+  const prefLabelsEl = document.getElementById("pref-labels");
+
+  // SVG要素では `.hidden = true/false` を代入しても hidden 属性に反映されず
+  // 表示が変わらないことがあるため、属性を直接操作する
+  function setSvgHidden(el, hidden) {
+    if (hidden) {
+      el.setAttribute("hidden", "");
+    } else {
+      el.removeAttribute("hidden");
+    }
+  }
 
   // 都道府県名そのものを当てるモードでのみヒントを出す（県庁所在地モードは
   // 県名が最初から表示されているので、県のヒントは意味がない）
   const HINT_MODES = new Set(["pref", "both"]);
   // 県庁所在地が答えに関わるモードでだけピンを表示する
   const CAPITAL_PIN_MODES = new Set(["capital", "both"]);
+  const QUIZ_MODES = new Set(["pref", "capital", "both"]);
 
   const FULL_VIEWBOX = [0, 0, 1000, 1000];
   const ZOOM_PADDING = 2.4;
@@ -199,7 +214,7 @@
     return matrix;
   }
 
-  function getZoomedViewBox(el) {
+  function getPrefectureRootBBox(el) {
     const bbox = el.getBBox();
     const matrix = getLocalToRootMatrix(el);
     let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
@@ -216,11 +231,41 @@
       minY = Math.min(minY, p.y);
       maxY = Math.max(maxY, p.y);
     }
+    return { minX, minY, maxX, maxY };
+  }
+
+  function getZoomedViewBox(el) {
+    const { minX, minY, maxX, maxY } = getPrefectureRootBBox(el);
     const cx = (minX + maxX) / 2;
     const cy = (minY + maxY) / 2;
     let size = Math.max(maxX - minX, maxY - minY) * ZOOM_PADDING;
     size = Math.min(Math.max(size, ZOOM_MIN_SIZE), FULL_VIEWBOX[2]);
     return [cx - size / 2, cy - size / 2, size, size];
+  }
+
+  // 指定した都道府県コード群をまとめて画面に収めるビューボックスを求める
+  // （閲覧モードで「地方」単位に寄る用途）
+  function getRegionViewBox(codes) {
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    for (const code of codes) {
+      const el = svg.querySelector(`.prefecture[data-code="${code}"]`);
+      if (!el) continue;
+      const b = getPrefectureRootBBox(el);
+      minX = Math.min(minX, b.minX);
+      minY = Math.min(minY, b.minY);
+      maxX = Math.max(maxX, b.maxX);
+      maxY = Math.max(maxY, b.maxY);
+    }
+    if (!Number.isFinite(minX)) return FULL_VIEWBOX.slice();
+    const cx = (minX + maxX) / 2;
+    const cy = (minY + maxY) / 2;
+    let size = Math.max(maxX - minX, maxY - minY) * 1.2;
+    size = Math.min(Math.max(size, ZOOM_MIN_SIZE), FULL_VIEWBOX[2]);
+    let x = cx - size / 2;
+    let y = cy - size / 2;
+    x = clamp(x, 0, Math.max(0, FULL_VIEWBOX[2] - size));
+    y = clamp(y, 0, Math.max(0, FULL_VIEWBOX[3] - size));
+    return [x, y, size, size];
   }
 
   function animateViewBox(target) {
@@ -337,6 +382,32 @@
     { passive: false }
   );
 
+  function updateLabelsVisibility() {
+    const show = namesToggle.checked;
+    const activeSet = new Set(activeCodes);
+    prefLabelsEl.querySelectorAll(".pref-label").forEach((el) => {
+      setSvgHidden(el, !show || !activeSet.has(el.dataset.code));
+    });
+  }
+
+  function startBrowseMode() {
+    if (highlightedEl) {
+      highlightedEl.style.fill = "";
+      highlightedEl = null;
+    }
+    setSvgHidden(capitalPinEl, true);
+    promptNameEl.hidden = true;
+    questionTextEl.textContent = "";
+    hintBtn.hidden = true;
+    hintRevealEl.hidden = true;
+    answerBox.hidden = true;
+    hintTextEl.hidden = true;
+    namesToggleLabel.hidden = false;
+    setSvgHidden(prefLabelsEl, false);
+    updateLabelsVisibility();
+    animateViewBox(getRegionViewBox(activeCodes));
+  }
+
   function startMode(newMode) {
     mode = newMode;
     activeCodes = getActiveCodes();
@@ -346,7 +417,15 @@
     modeLabelEl.textContent = regionLabel ? `${regionLabel}・${MODE_LABELS[mode]}` : MODE_LABELS[mode];
     screenStart.hidden = true;
     screenQuiz.hidden = false;
-    nextQuestion();
+
+    if (mode === "browse") {
+      startBrowseMode();
+    } else {
+      namesToggleLabel.hidden = true;
+      setSvgHidden(prefLabelsEl, true);
+      hintTextEl.hidden = false;
+      nextQuestion();
+    }
   }
 
   function backToStart() {
@@ -359,6 +438,8 @@
     }
     currentViewBox = FULL_VIEWBOX.slice();
     svg.setAttribute("viewBox", currentViewBox.join(" "));
+    namesToggleLabel.hidden = true;
+    setSvgHidden(prefLabelsEl, true);
   }
 
   function nextQuestion() {
@@ -382,10 +463,10 @@
     // 県庁所在地が問われているモードでは、問題を出した時点からピンを表示する
     // （タップして次の問題に進むと、新しい県の位置に切り替わる）
     if (CAPITAL_PIN_MODES.has(mode) && pref.pin) {
-      capitalPinEl.hidden = false;
+      setSvgHidden(capitalPinEl, false);
       capitalPinEl.setAttribute("transform", `translate(${pref.pin.x}, ${pref.pin.y})`);
     } else {
-      capitalPinEl.hidden = true;
+      setSvgHidden(capitalPinEl, true);
     }
 
     if (mode === "capital") {
@@ -429,6 +510,7 @@
   }
 
   tapArea.addEventListener("click", () => {
+    if (!QUIZ_MODES.has(mode)) return; // 閲覧モードにはタップで進む操作がない
     if (suppressNextClick) {
       suppressNextClick = false;
       return;
@@ -445,6 +527,8 @@
     hintShown = true;
     render();
   });
+
+  namesToggle.addEventListener("change", updateLabelsVisibility);
 
   backBtn.addEventListener("click", (e) => {
     e.stopPropagation();

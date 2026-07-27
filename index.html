@@ -28,6 +28,10 @@
         <span class="mode-btn-title">両方モード</span>
         <span class="mode-btn-desc">県名と県庁所在地の両方を当てよう</span>
       </button>
+      <button class="mode-btn" data-mode="browse">
+        <span class="mode-btn-title">閲覧モード</span>
+        <span class="mode-btn-desc">地図に都道府県名を表示して確認しよう</span>
+      </button>
     </div>
     <p class="credit">地図データ: <a href="https://github.com/geolonia/japanese-prefectures" target="_blank" rel="noopener">Geolonia japanese-prefectures</a>（GFDL, based on Wikipedia）</p>
   </section>
@@ -37,6 +41,10 @@
     <header class="quiz-header">
       <button id="back-btn" class="back-btn" aria-label="モード選択に戻る">←</button>
       <span id="mode-label" class="mode-label"></span>
+      <label id="names-toggle-label" class="names-toggle-label" hidden>
+        <input type="checkbox" id="names-toggle" checked>
+        県名を表示
+      </label>
     </header>
 
     <div id="tap-area" class="tap-area">
@@ -224,6 +232,55 @@
           <g id="capital-pin" hidden>
             <circle r="5.5" fill="#d1004b" stroke="#ffffff" stroke-width="1.5"/>
             <circle r="1.8" fill="#ffffff"/>
+          </g>
+          <g id="pref-labels" hidden>
+            <text class="pref-label" data-code="1" x="722.2" y="163.7">北海道</text>
+            <text class="pref-label" data-code="2" x="647.2" y="333.2">青森県</text>
+            <text class="pref-label" data-code="3" x="676.1" y="409.5">岩手県</text>
+            <text class="pref-label" data-code="4" x="657.5" y="484.4">宮城県</text>
+            <text class="pref-label" data-code="5" x="628.5" y="401.5">秋田県</text>
+            <text class="pref-label" data-code="6" x="616" y="485.1">山形県</text>
+            <text class="pref-label" data-code="7" x="624.3" y="553.9">福島県</text>
+            <text class="pref-label" data-code="8" x="631" y="622.8">茨城県</text>
+            <text class="pref-label" data-code="9" x="604.3" y="598.6">栃木県</text>
+            <text class="pref-label" data-code="10" x="561.2" y="611.8">群馬県</text>
+            <text class="pref-label" data-code="11" x="581.7" y="643.5">埼玉県</text>
+            <text class="pref-label" data-code="12" x="626.8" y="674.5">千葉県</text>
+            <text class="pref-label" data-code="13" x="586" y="661.6">東京都</text>
+            <text class="pref-label" data-code="14" x="581.2" y="680.7">神奈川県</text>
+            <text class="pref-label" data-code="15" x="559.1" y="548.4">新潟県</text>
+            <text class="pref-label" data-code="16" x="473.3" y="603.3">富山県</text>
+            <text class="pref-label" data-code="17" x="446.8" y="595.4">石川県</text>
+            <text class="pref-label" data-code="18" x="418.1" y="654">福井県</text>
+            <text class="pref-label" data-code="19" x="543.2" y="668.6">山梨県</text>
+            <text class="pref-label" data-code="20" x="513.1" y="635.9">長野県</text>
+            <text class="pref-label" data-code="21" x="461.9" y="658.3">岐阜県</text>
+            <text class="pref-label" data-code="22" x="529.1" y="707.4">静岡県</text>
+            <text class="pref-label" data-code="23" x="469.8" y="706.5">愛知県</text>
+            <text class="pref-label" data-code="24" x="425.5" y="738.8">三重県</text>
+            <text class="pref-label" data-code="25" x="413.1" y="694.5">滋賀県</text>
+            <text class="pref-label" data-code="26" x="376.6" y="691">京都府</text>
+            <text class="pref-label" data-code="27" x="379.2" y="732.3">大阪府</text>
+            <text class="pref-label" data-code="28" x="343.9" y="700.4">兵庫県</text>
+            <text class="pref-label" data-code="29" x="398" y="752.2">奈良県</text>
+            <text class="pref-label" data-code="30" x="378.3" y="777.5">和歌山県</text>
+            <text class="pref-label" data-code="31" x="294.3" y="681.9">鳥取県</text>
+            <text class="pref-label" data-code="32" x="223.2" y="701">島根県</text>
+            <text class="pref-label" data-code="33" x="290.7" y="711.2">岡山県</text>
+            <text class="pref-label" data-code="34" x="235.6" y="726.2">広島県</text>
+            <text class="pref-label" data-code="35" x="168.5" y="748.9">山口県</text>
+            <text class="pref-label" data-code="36" x="310.4" y="775.3">徳島県</text>
+            <text class="pref-label" data-code="37" x="297" y="756.1">香川県</text>
+            <text class="pref-label" data-code="38" x="235.9" y="792.2">愛媛県</text>
+            <text class="pref-label" data-code="39" x="263.3" y="805.1">高知県</text>
+            <text class="pref-label" data-code="40" x="118.6" y="790.5">福岡県</text>
+            <text class="pref-label" data-code="41" x="88.4" y="803.2">佐賀県</text>
+            <text class="pref-label" data-code="42" x="77.3" y="824.6">長崎県</text>
+            <text class="pref-label" data-code="43" x="124.4" y="847.1">熊本県</text>
+            <text class="pref-label" data-code="44" x="158.6" y="813.6">大分県</text>
+            <text class="pref-label" data-code="45" x="147.7" y="878">宮崎県</text>
+            <text class="pref-label" data-code="46" x="110.2" y="913.6">鹿児島県</text>
+            <text class="pref-label" data-code="47" x="309.8" y="209.9">沖縄県</text>
           </g>
         </svg>
       </div>

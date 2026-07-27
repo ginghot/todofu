@@ -163,6 +163,21 @@ html, body {
   color: #16324a;
 }
 
+.names-toggle-label {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.85rem;
+  color: #52606d;
+  white-space: nowrap;
+}
+
+.names-toggle-label input {
+  width: 18px;
+  height: 18px;
+}
+
 .tap-area {
   flex: 1;
   display: flex;
@@ -231,6 +246,26 @@ html, body {
 #japan-map .prefecture polygon,
 #japan-map .prefecture path {
   transition: fill 0.15s ease;
+}
+
+/* Some browsers don't apply the generic `[hidden] { display: none }` UA rule
+   to SVG-namespaced elements the way they do for HTML — spell it out. */
+#capital-pin[hidden],
+#pref-labels[hidden],
+.pref-label[hidden] {
+  display: none;
+}
+
+.pref-label {
+  font-size: 15px;
+  font-weight: 700;
+  fill: #16324a;
+  stroke: #ffffff;
+  stroke-width: 3px;
+  paint-order: stroke fill;
+  text-anchor: middle;
+  dominant-baseline: middle;
+  pointer-events: none;
 }
 
 .answer-box {
