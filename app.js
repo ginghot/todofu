@@ -118,6 +118,14 @@
     return Math.min(Math.max(v, min), max);
   }
 
+  // ラベルの文字は SVG のユーザー単位で固定サイズのため、ズームインする
+  // ほど画面上では大きく見えてしまう。viewBox が縮むほどフォントサイズも
+  // (平方根で緩やかに) 縮めて、拡大時の文字の肥大化を抑える。
+  function updateLabelFontScale(viewBoxSize) {
+    const scale = clamp(Math.sqrt(viewBoxSize / FULL_VIEWBOX[2]), 0.25, 1);
+    svg.style.setProperty("--label-font-scale", scale);
+  }
+
   function getRenderMetrics() {
     const rect = svg.getBoundingClientRect();
     const renderedSize = Math.min(rect.width, rect.height) || 1;
@@ -146,6 +154,7 @@
     y = clamp(y, 0, Math.max(0, FULL_VIEWBOX[3] - size));
     currentViewBox = [x, y, size, size];
     svg.setAttribute("viewBox", currentViewBox.join(" "));
+    updateLabelFontScale(size);
   }
 
   function startGesture() {
@@ -279,6 +288,7 @@
       const eased = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
       const vb = start.map((s, i) => s + (target[i] - s) * eased);
       svg.setAttribute("viewBox", vb.join(" "));
+      updateLabelFontScale(vb[2]);
       if (t < 1) {
         zoomAnimId = requestAnimationFrame(step);
       } else {
@@ -446,6 +456,7 @@
     }
     currentViewBox = FULL_VIEWBOX.slice();
     svg.setAttribute("viewBox", currentViewBox.join(" "));
+    updateLabelFontScale(currentViewBox[2]);
     browseControlsEl.hidden = true;
     setSvgHidden(prefLabelsEl, true);
     setSvgHidden(capitalLabelsEl, true);

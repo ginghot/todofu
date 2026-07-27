@@ -269,7 +269,7 @@ html, body {
 }
 
 .pref-label {
-  font-size: 15px;
+  font-size: calc(15px * var(--label-font-scale, 1));
   font-weight: 700;
   fill: #16324a;
   stroke: #ffffff;
@@ -281,7 +281,7 @@ html, body {
 }
 
 .capital-label {
-  font-size: 11px;
+  font-size: calc(11px * var(--label-font-scale, 1));
   font-weight: 700;
   fill: #d1004b;
   stroke: #ffffff;
