@@ -163,8 +163,18 @@ html, body {
   color: #16324a;
 }
 
+.browse-controls {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 16px;
+  padding: 10px 16px;
+  background: #ffffff;
+  border-bottom: 1px solid #e4e7eb;
+  flex-shrink: 0;
+}
+
 .names-toggle-label {
-  margin-left: auto;
   display: flex;
   align-items: center;
   gap: 6px;
@@ -252,7 +262,9 @@ html, body {
    to SVG-namespaced elements the way they do for HTML — spell it out. */
 #capital-pin[hidden],
 #pref-labels[hidden],
-.pref-label[hidden] {
+#capital-labels[hidden],
+.pref-label[hidden],
+.capital-marker[hidden] {
   display: none;
 }
 
@@ -265,6 +277,18 @@ html, body {
   paint-order: stroke fill;
   text-anchor: middle;
   dominant-baseline: middle;
+  pointer-events: none;
+}
+
+.capital-label {
+  font-size: 11px;
+  font-weight: 700;
+  fill: #d1004b;
+  stroke: #ffffff;
+  stroke-width: 2.5px;
+  paint-order: stroke fill;
+  text-anchor: middle;
+  dominant-baseline: hanging;
   pointer-events: none;
 }
 

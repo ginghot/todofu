@@ -32,9 +32,11 @@
   const hintBtn = document.getElementById("hint-btn");
   const hintRevealEl = document.getElementById("hint-reveal");
   const capitalPinEl = document.getElementById("capital-pin");
-  const namesToggleLabel = document.getElementById("names-toggle-label");
+  const browseControlsEl = document.getElementById("browse-controls");
   const namesToggle = document.getElementById("names-toggle");
+  const capitalToggle = document.getElementById("capital-toggle");
   const prefLabelsEl = document.getElementById("pref-labels");
+  const capitalLabelsEl = document.getElementById("capital-labels");
 
   // SVG要素では `.hidden = true/false` を代入しても hidden 属性に反映されず
   // 表示が変わらないことがあるため、属性を直接操作する
@@ -383,10 +385,14 @@
   );
 
   function updateLabelsVisibility() {
-    const show = namesToggle.checked;
+    const showNames = namesToggle.checked;
+    const showCapitals = capitalToggle.checked;
     const activeSet = new Set(activeCodes);
     prefLabelsEl.querySelectorAll(".pref-label").forEach((el) => {
-      setSvgHidden(el, !show || !activeSet.has(el.dataset.code));
+      setSvgHidden(el, !showNames || !activeSet.has(el.dataset.code));
+    });
+    capitalLabelsEl.querySelectorAll(".capital-marker").forEach((el) => {
+      setSvgHidden(el, !showCapitals || !activeSet.has(el.dataset.code));
     });
   }
 
@@ -402,8 +408,9 @@
     hintRevealEl.hidden = true;
     answerBox.hidden = true;
     hintTextEl.hidden = true;
-    namesToggleLabel.hidden = false;
+    browseControlsEl.hidden = false;
     setSvgHidden(prefLabelsEl, false);
+    setSvgHidden(capitalLabelsEl, false);
     updateLabelsVisibility();
     animateViewBox(getRegionViewBox(activeCodes));
   }
@@ -421,8 +428,9 @@
     if (mode === "browse") {
       startBrowseMode();
     } else {
-      namesToggleLabel.hidden = true;
+      browseControlsEl.hidden = true;
       setSvgHidden(prefLabelsEl, true);
+      setSvgHidden(capitalLabelsEl, true);
       hintTextEl.hidden = false;
       nextQuestion();
     }
@@ -438,8 +446,9 @@
     }
     currentViewBox = FULL_VIEWBOX.slice();
     svg.setAttribute("viewBox", currentViewBox.join(" "));
-    namesToggleLabel.hidden = true;
+    browseControlsEl.hidden = true;
     setSvgHidden(prefLabelsEl, true);
+    setSvgHidden(capitalLabelsEl, true);
   }
 
   function nextQuestion() {
@@ -529,6 +538,7 @@
   });
 
   namesToggle.addEventListener("change", updateLabelsVisibility);
+  capitalToggle.addEventListener("change", updateLabelsVisibility);
 
   backBtn.addEventListener("click", (e) => {
     e.stopPropagation();
