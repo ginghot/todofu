@@ -8,13 +8,16 @@
     pref: "都道府県モード",
     capital: "県庁所在地モード",
     both: "両方モード",
+    tap: "タップモード",
     browse: "閲覧モード",
   };
   const QUESTION_TEXT = {
     pref: "黄色の都道府県はどこ？",
     capital: "この県の県庁所在地は？",
     both: "黄色の都道府県名と県庁所在地は？",
+    tap: "黄色の都道府県名と県庁所在地は？",
   };
+  const TAP_IDLE_TEXT = "都道府県をタップして問題を選ぼう";
 
   const screenStart = document.getElementById("screen-start");
   const screenQuiz = document.getElementById("screen-quiz");
@@ -50,9 +53,9 @@
 
   // 都道府県名そのものを当てるモードでのみヒントを出す（県庁所在地モードは
   // 県名が最初から表示されているので、県のヒントは意味がない）
-  const HINT_MODES = new Set(["pref", "both"]);
+  const HINT_MODES = new Set(["pref", "both", "tap"]);
   // 県庁所在地が答えに関わるモードでだけピンを表示する
-  const CAPITAL_PIN_MODES = new Set(["capital", "both"]);
+  const CAPITAL_PIN_MODES = new Set(["capital", "both", "tap"]);
   const QUIZ_MODES = new Set(["pref", "capital", "both"]);
 
   const FULL_VIEWBOX = [0, 0, 1000, 1000];
@@ -245,13 +248,83 @@
     return { minX, minY, maxX, maxY };
   }
 
+  // 図形同士の隙間（重なっていれば 0）
+  function bboxGap(a, b) {
+    const dx = Math.max(a.minX - b.maxX, b.minX - a.maxX, 0);
+    const dy = Math.max(a.minY - b.maxY, b.minY - a.maxY, 0);
+    return Math.hypot(dx, dy);
+  }
+
+  function pointToBBoxDistance(box, x, y) {
+    const dx = Math.max(box.minX - x, x - box.maxX, 0);
+    const dy = Math.max(box.minY - y, y - box.maxY, 0);
+    return Math.hypot(dx, dy);
+  }
+
+  function mergeBBox(a, b) {
+    return {
+      minX: Math.min(a.minX, b.minX),
+      minY: Math.min(a.minY, b.minY),
+      maxX: Math.max(a.maxX, b.maxX),
+      maxY: Math.max(a.maxY, b.maxY),
+    };
+  }
+
+  // 紙面の都合で本土から離れた離島（鹿児島の奄美・沖縄の宮古/八重山など）
+  // を地図の別の場所にまとめて描いている県がある。要素全体の bbox で
+  // ズームすると本土と離島の中間・地図の外まで含む範囲になってしまうため、
+  // 県庁所在地ピンに最も近いパーツから、隣接する図形だけをつなげてズーム
+  // 範囲とする（離れた離島は除外する）。
+  const CLUSTER_GAP = 60;
+
+  function getMainClusterBBox(el) {
+    const shapes = Array.from(el.children).filter(
+      (c) => c.tagName === "polygon" || c.tagName === "path"
+    );
+    if (shapes.length <= 1) return getPrefectureRootBBox(el);
+
+    const boxes = shapes.map((c) => getPrefectureRootBBox(c));
+    const pref = byCode.get(el.dataset.code);
+    const pin = pref && pref.pin;
+    let seedIdx = 0;
+    if (pin) {
+      let best = Infinity;
+      boxes.forEach((b, i) => {
+        const d = pointToBBoxDistance(b, pin.x, pin.y);
+        if (d < best) {
+          best = d;
+          seedIdx = i;
+        }
+      });
+    }
+
+    let cluster = boxes[seedIdx];
+    const remaining = boxes.filter((_, i) => i !== seedIdx);
+    let changed = true;
+    while (changed) {
+      changed = false;
+      for (let i = remaining.length - 1; i >= 0; i--) {
+        if (bboxGap(cluster, remaining[i]) <= CLUSTER_GAP) {
+          cluster = mergeBBox(cluster, remaining[i]);
+          remaining.splice(i, 1);
+          changed = true;
+        }
+      }
+    }
+    return cluster;
+  }
+
   function getZoomedViewBox(el) {
-    const { minX, minY, maxX, maxY } = getPrefectureRootBBox(el);
+    const { minX, minY, maxX, maxY } = getMainClusterBBox(el);
     const cx = (minX + maxX) / 2;
     const cy = (minY + maxY) / 2;
     let size = Math.max(maxX - minX, maxY - minY) * ZOOM_PADDING;
     size = Math.min(Math.max(size, ZOOM_MIN_SIZE), FULL_VIEWBOX[2]);
-    return [cx - size / 2, cy - size / 2, size, size];
+    let x = cx - size / 2;
+    let y = cy - size / 2;
+    x = clamp(x, 0, Math.max(0, FULL_VIEWBOX[2] - size));
+    y = clamp(y, 0, Math.max(0, FULL_VIEWBOX[3] - size));
+    return [x, y, size, size];
   }
 
   // 指定した都道府県コード群をまとめて画面に収めるビューボックスを求める
@@ -437,6 +510,12 @@
 
     if (mode === "browse") {
       startBrowseMode();
+    } else if (mode === "tap") {
+      browseControlsEl.hidden = true;
+      setSvgHidden(prefLabelsEl, true);
+      setSvgHidden(capitalLabelsEl, true);
+      hintTextEl.hidden = false;
+      startTapMode();
     } else {
       browseControlsEl.hidden = true;
       setSvgHidden(prefLabelsEl, true);
@@ -474,10 +553,86 @@
     render();
   }
 
+  // タップモード: ランダム出題ではなく、地図をタップして選んだ都道府県が
+  // そのまま問題になる。
+  function startTapMode() {
+    if (highlightedEl) {
+      highlightedEl.style.fill = "";
+      highlightedEl = null;
+    }
+    currentCode = null;
+    showingAnswer = false;
+    hintShown = false;
+    setSvgHidden(capitalPinEl, true);
+    promptNameEl.hidden = true;
+    hintBtn.hidden = true;
+    hintRevealEl.hidden = true;
+    answerBox.hidden = true;
+    hintTextEl.textContent = "";
+    questionTextEl.textContent = TAP_IDLE_TEXT;
+    animateViewBox(getRegionViewBox(activeCodes));
+  }
+
+  function selectTapTarget(code) {
+    currentCode = code;
+    showingAnswer = false;
+    hintShown = false;
+    render();
+  }
+
+  function deselectTapTarget() {
+    currentCode = null;
+    showingAnswer = false;
+    hintShown = false;
+    if (highlightedEl) {
+      highlightedEl.style.fill = "";
+      highlightedEl = null;
+    }
+    setSvgHidden(capitalPinEl, true);
+    promptNameEl.hidden = true;
+    hintBtn.hidden = true;
+    hintRevealEl.hidden = true;
+    answerBox.hidden = true;
+    hintTextEl.textContent = "";
+    questionTextEl.textContent = TAP_IDLE_TEXT;
+    animateViewBox(getRegionViewBox(activeCodes));
+  }
+
+  // タップモードのタップ操作は「県をタップして選ぶ／どこをタップしても
+  // 答えが開く／答えが開いたら次の県をタップする」という、他モードの
+  // 「どこをタップしても進む」とは違う状態遷移になるため専用に処理する。
+  function handleTapModeClick(e) {
+    if (suppressNextClick) {
+      suppressNextClick = false;
+      return;
+    }
+    if (currentCode && !showingAnswer) {
+      reveal();
+      return;
+    }
+    // svg 側で pointer capture しているため e.target は常に <svg> 自身に
+    // なってしまう（キャプチャ中の合成 click イベントの仕様）。実際に
+    // タップされた図形は座標から改めて調べる。
+    const hitEl = document.elementFromPoint(e.clientX, e.clientY);
+    const targetEl = hitEl && hitEl.closest && hitEl.closest(".prefecture");
+    const tappedCode = targetEl && activeCodes.includes(targetEl.dataset.code) ? targetEl.dataset.code : null;
+    if (tappedCode) {
+      selectTapTarget(tappedCode);
+    } else if (currentCode) {
+      deselectTapTarget();
+    }
+  }
+
   function render() {
     const pref = byCode.get(currentCode);
     highlight(currentCode);
-    zoomTo(currentCode);
+    // タップモードで答えを表示した後は、選んだ県にズームしたままにせず
+    // 地方全体に戻して次にタップする県を選びやすくする
+    if (mode === "tap" && showingAnswer) {
+      animateViewBox(getRegionViewBox(activeCodes));
+    } else {
+      zoomTo(currentCode);
+    }
     questionTextEl.textContent = QUESTION_TEXT[mode];
 
     // 県庁所在地が問われているモードでは、問題を出した時点からピンを表示する
@@ -514,14 +669,14 @@
     answerBox.hidden = false;
     hintTextEl.textContent = "タップして次へ";
 
-    if (mode === "pref" || mode === "both") {
+    if (mode === "pref" || mode === "both" || mode === "tap") {
       answerPrefEl.hidden = false;
       answerPrefEl.innerHTML = `${pref.name}<span class="kana">${pref.kana}</span>`;
     } else {
       answerPrefEl.hidden = true;
     }
 
-    if (mode === "capital" || mode === "both") {
+    if (mode === "capital" || mode === "both" || mode === "tap") {
       answerCapitalEl.hidden = false;
       answerCapitalEl.innerHTML = `${pref.capital}<span class="kana">${pref.capitalKana}</span>`;
     } else {
@@ -529,7 +684,11 @@
     }
   }
 
-  tapArea.addEventListener("click", () => {
+  tapArea.addEventListener("click", (e) => {
+    if (mode === "tap") {
+      handleTapModeClick(e);
+      return;
+    }
     if (!QUIZ_MODES.has(mode)) return; // 閲覧モードにはタップで進む操作がない
     if (suppressNextClick) {
       suppressNextClick = false;
