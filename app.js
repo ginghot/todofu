@@ -665,7 +665,9 @@
     }
 
     hintBtn.hidden = true;
-    hintRevealEl.hidden = true;
+    // 答えを表示するタイミングでヒントも一緒に見せる
+    hintRevealEl.hidden = !HINT_MODES.has(mode);
+    hintRevealEl.textContent = HINT_MODES.has(mode) ? `ヒント: ${pref.hint}` : "";
     answerBox.hidden = false;
     hintTextEl.textContent = "タップして次へ";
 
