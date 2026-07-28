@@ -665,9 +665,11 @@
     }
 
     hintBtn.hidden = true;
-    // 答えを表示するタイミングでヒントも一緒に見せる
-    hintRevealEl.hidden = !HINT_MODES.has(mode);
-    hintRevealEl.textContent = HINT_MODES.has(mode) ? `ヒント: ${pref.hint}` : "";
+    // 答えを表示するタイミングでは、どのモードでもヒントを一緒に見せる
+    // （県庁所在地モードのように答える前は県名が既に分かっていて
+    // ヒントボタンを出さないモードでも、答え合わせの豆知識として出す）
+    hintRevealEl.hidden = false;
+    hintRevealEl.textContent = `ヒント: ${pref.hint}`;
     answerBox.hidden = false;
     hintTextEl.textContent = "タップして次へ";
 
