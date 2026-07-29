@@ -323,6 +323,14 @@ html, body {
   margin-top: 2px;
 }
 
+.answer-person {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #52606d;
+  text-align: center;
+  margin-top: 2px;
+}
+
 .hint-text {
   margin: 0;
   font-size: 0.85rem;

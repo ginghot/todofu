@@ -31,6 +31,7 @@
   const answerBox = document.getElementById("answer-box");
   const answerPrefEl = document.getElementById("answer-pref");
   const answerCapitalEl = document.getElementById("answer-capital");
+  const answerPersonEl = document.getElementById("answer-person");
   const hintTextEl = document.getElementById("hint-text");
   const hintBtn = document.getElementById("hint-btn");
   const hintRevealEl = document.getElementById("hint-reveal");
@@ -656,6 +657,7 @@
       answerBox.hidden = true;
       answerPrefEl.hidden = true;
       answerCapitalEl.hidden = true;
+      answerPersonEl.hidden = true;
       hintTextEl.textContent = "タップして答えを見る";
 
       hintBtn.hidden = !HINT_MODES.has(mode) || hintShown;
@@ -686,6 +688,10 @@
     } else {
       answerCapitalEl.hidden = true;
     }
+
+    // ゆかりの人物は答え合わせの豆知識として、モードを問わず常に見せる
+    answerPersonEl.hidden = false;
+    answerPersonEl.textContent = `ゆかりの人物: ${pref.famousPerson}`;
   }
 
   tapArea.addEventListener("click", (e) => {
